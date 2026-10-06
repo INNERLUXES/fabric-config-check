@@ -1,0 +1,42 @@
+fabric-config-check: examples/good/configtx.yaml
+input: 201 lines, 5,107 bytes; 2 profiles checked; 4 organizations; 0 constructs passed over
+profiles: HarborChannel and AuditChannel
+findings: 2 (2 info)
+
+Checks (18)
+
+  check                   level    kind           findings
+  config-unreadable       error    input          0
+  unsupported-construct   warning  input          0
+  no-profiles             error    input          0
+  single-organization     warning  best practice  0
+  admins-any              error    documented     0
+  readers-writers-any     info     best practice  2
+  endorsement-any         warning  documented     0
+  anchor-peers-missing    warning  documented     0
+  orderer-solo            error    documented     0
+  raft-consenter-count    warning  best practice  0
+  bft-consenter-count     warning  documented     0
+  consenters-single-host  warning  best practice  0
+  consenter-tls-missing   error    documented     0
+  batch-settings-missing  warning  documented     0
+  capabilities-missing    warning  documented     0
+  capability-disabled     warning  documented     0
+  org-msp-incomplete      error    documented     0
+  duplicate-msp-id        error    documented     0
+
+Findings (2)
+
+  INFO     readers-writers-any     examples/good/configtx.yaml:107
+           The Application Readers and Writers policies are "ANY Readers" and "ANY Writers", so any one organization can read and submit. The documentation defaults are ANY, so confirm it is intended. This is a best practice of this tool, not a rule in the Fabric documentation.
+           profiles: HarborChannel and AuditChannel
+           fix: Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault.
+
+  INFO     readers-writers-any     examples/good/configtx.yaml:142
+           The Orderer Readers and Writers policies are "ANY Readers" and "ANY Writers", so any one organization can read and submit. The documentation defaults are ANY, so confirm it is intended. This is a best practice of this tool, not a rule in the Fabric documentation.
+           profiles: HarborChannel and AuditChannel
+           fix: Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault.
+
+This report is an input to a governance review before members join a network: not a security audit and not a guarantee that the network is safe.
+
+RESULT: PASS - no finding at or above error (2 info)

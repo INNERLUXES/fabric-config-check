@@ -1,0 +1,227 @@
+# A made-up consortium network of a harbor, with a configtx.yaml that holds one finding of nearly every check. It is an
+# input for the tool, never used to build a channel, and the names, hosts and paths are made up.
+---
+Organizations:
+  - &HarborOrg
+    Name: HarborOrg
+    ID: HarborMSP
+    MSPDir: ../crypto/harbor/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('HarborMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('HarborMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('HarborMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('HarborMSP.peer')"
+
+  # No MSPDir, and a description in a form the reader passes over.
+  - &DockOrg
+    Name: DockOrg
+    ID: DockMSP
+    Description: |
+      Runs the dock cranes.
+      Joins the network later.
+    AnchorPeers:
+      - Host: peer0.dock.test
+        Port: 7051
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('DockMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('DockMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('DockMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('DockMSP.peer')"
+
+  # No ID.
+  - &QuayOrg
+    Name: QuayOrg
+    MSPDir: ../crypto/quay/msp
+    AnchorPeers:
+      - Host: peer0.quay.test
+        Port: 7051
+    Policies:
+      Admins:
+        Type: Signature
+        Rule: "OR('QuayMSP.admin')"
+
+  # The same MSP ID as HarborOrg.
+  - &TerminalOrg
+    Name: TerminalOrg
+    ID: HarborMSP
+    MSPDir: ../crypto/terminal/msp
+    AnchorPeers:
+      - Host: peer0.terminal.test
+        Port: 7051
+    Policies:
+      Admins:
+        Type: Signature
+        Rule: "OR('HarborMSP.admin')"
+
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: ../crypto/orderer/msp
+    OrdererEndpoints:
+      - "raft.harbor.test:7050"
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  # The orderer level is written but switched off.
+  Orderer: &OrdererCapabilities
+    V2_0: false
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies: &ApplicationDefaultPolicies
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "ANY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "ANY Admins"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  BatchTimeout: 2s
+  # PreferredMaxBytes is left out.
+  BatchSize:
+    MaxMessageCount: 500
+    AbsoluteMaxBytes: 10 MB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  # The solo orderer, and one organization in the channel and in the consortium.
+  DevSolo:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: solo
+      Organizations:
+        - *OrdererOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *HarborOrg
+    Consortiums:
+      HarborConsortium:
+        Organizations:
+          - *HarborOrg
+
+  # Two Raft consenters on one host, one of them with no server certificate, no batch settings, and no capabilities at
+  # any level.
+  TwoNodeRaft:
+    Orderer:
+      OrdererType: etcdraft
+      EtcdRaft:
+        Consenters:
+          - Host: raft.harbor.test
+            Port: 7050
+            ClientTLSCert: ../crypto/orderer/raft0/tls/server.crt
+            ServerTLSCert: ../crypto/orderer/raft0/tls/server.crt
+          - Host: raft.harbor.test
+            Port: 7060
+            ClientTLSCert: ../crypto/orderer/raft1/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+    Application:
+      Organizations:
+        - *DockOrg
+        - *QuayOrg
+
+  # Three BFT consenters, an orderer capability level that is off, and four organizations of which two share an MSP ID.
+  BftSmall:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: BFT
+      ConsenterMapping:
+        - ID: 1
+          Host: bft0.harbor.test
+          Port: 7050
+          MSPID: OrdererMSP
+          ClientTLSCert: ../crypto/orderer/bft0/tls/server.crt
+          ServerTLSCert: ../crypto/orderer/bft0/tls/server.crt
+        - ID: 2
+          Host: bft1.harbor.test
+          Port: 7050
+          MSPID: OrdererMSP
+          ClientTLSCert: ../crypto/orderer/bft1/tls/server.crt
+          ServerTLSCert: ../crypto/orderer/bft1/tls/server.crt
+        - ID: 3
+          Host: bft2.harbor.test
+          Port: 7050
+          MSPID: OrdererMSP
+          ClientTLSCert: ../crypto/orderer/bft2/tls/server.crt
+          ServerTLSCert: ../crypto/orderer/bft2/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *HarborOrg
+        - *TerminalOrg

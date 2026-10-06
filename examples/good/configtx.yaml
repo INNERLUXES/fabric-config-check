@@ -1,0 +1,201 @@
+# A made-up consortium network of a harbor, with a configtx.yaml that passes the checks at error and warning level. The
+# policies that say ANY are the documentation defaults for Readers and Writers, and the tool lists them as notes. It is
+# an input for the tool, never used to build a channel, and the names, hosts and paths are made up.
+---
+Organizations:
+  - &HarborOrg
+    Name: HarborOrg
+    ID: HarborMSP
+    MSPDir: ../crypto/harbor/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('HarborMSP.admin', 'HarborMSP.peer', 'HarborMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('HarborMSP.admin', 'HarborMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('HarborMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('HarborMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.harbor.test
+        Port: 7051
+
+  - &DockOrg
+    Name: DockOrg
+    ID: DockMSP
+    MSPDir: ../crypto/dock/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('DockMSP.admin', 'DockMSP.peer', 'DockMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('DockMSP.admin', 'DockMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('DockMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('DockMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.dock.test
+        Port: 7051
+
+  - &QuayOrg
+    Name: QuayOrg
+    ID: QuayMSP
+    MSPDir: ../crypto/quay/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('QuayMSP.admin', 'QuayMSP.peer', 'QuayMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('QuayMSP.admin', 'QuayMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('QuayMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('QuayMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.quay.test
+        Port: 7051
+
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: ../crypto/orderer/msp
+    OrdererEndpoints:
+      - "raft0.harbor.test:7050"
+      - "raft1.harbor.test:7050"
+      - "raft2.harbor.test:7050"
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies: &ApplicationDefaultPolicies
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 500
+    AbsoluteMaxBytes: 10 MB
+    PreferredMaxBytes: 2 MB
+  EtcdRaft:
+    Consenters:
+      - Host: raft0.harbor.test
+        Port: 7050
+        ClientTLSCert: ../crypto/orderer/raft0/tls/server.crt
+        ServerTLSCert: ../crypto/orderer/raft0/tls/server.crt
+      - Host: raft1.harbor.test
+        Port: 7050
+        ClientTLSCert: ../crypto/orderer/raft1/tls/server.crt
+        ServerTLSCert: ../crypto/orderer/raft1/tls/server.crt
+      - Host: raft2.harbor.test
+        Port: 7050
+        ClientTLSCert: ../crypto/orderer/raft2/tls/server.crt
+        ServerTLSCert: ../crypto/orderer/raft2/tls/server.crt
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  # Three member organizations, and the consortium they form.
+  HarborChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *HarborOrg
+        - *DockOrg
+        - *QuayOrg
+    Consortiums:
+      HarborConsortium:
+        Organizations:
+          - *HarborOrg
+          - *DockOrg
+          - *QuayOrg
+
+  # A channel for two of the three.
+  AuditChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *HarborOrg
+        - *DockOrg

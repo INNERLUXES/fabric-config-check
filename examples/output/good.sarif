@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "fabric-config-check",
+          "version": "1.0.0",
+          "informationUri": "https://github.com/INNERLUXES/fabric-config-check",
+          "rules": [
+            {
+              "id": "config-unreadable",
+              "name": "config-unreadable",
+              "shortDescription": {
+                "text": "the file is not YAML the reader can follow (a tab in the indentation, a duplicate key, an alias with no anchor, a line outside the structure)"
+              },
+              "help": {
+                "text": "Fix the line named, or keep the file to the YAML that configtx.yaml files use (docs/inputs.md). (input)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "input"
+              }
+            },
+            {
+              "id": "unsupported-construct",
+              "name": "unsupported-construct",
+              "shortDescription": {
+                "text": "the file holds a YAML construct the reader passes over (a block scalar, a tag, a complex key, a second document, a quoted string over several lines); what it holds was not checked"
+              },
+              "help": {
+                "text": "Write the value in the plain form, or check that part by hand. (input)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "input"
+              }
+            },
+            {
+              "id": "no-profiles",
+              "name": "no-profiles",
+              "shortDescription": {
+                "text": "the file has no Profiles section with a profile in it, so there is no channel or consortium to check"
+              },
+              "help": {
+                "text": "Add the profiles the network is built from, or give the file that holds them. (input)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "input"
+              }
+            },
+            {
+              "id": "single-organization",
+              "name": "single-organization",
+              "shortDescription": {
+                "text": "the Application section of a profile, or a consortium, lists one organization"
+              },
+              "help": {
+                "text": "List every organization that is to be a member, so that the policies have more than one party to agree. (best practice)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "best practice"
+              }
+            },
+            {
+              "id": "admins-any",
+              "name": "admins-any",
+              "shortDescription": {
+                "text": "the Admins policy of the Application, Orderer or Channel section is ANY Admins, so the admins of any one organization can approve a change to that group"
+              },
+              "help": {
+                "text": "Use MAJORITY Admins, as the sample file does, or a signature policy that names the organizations whose approval is required. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "readers-writers-any",
+              "name": "readers-writers-any",
+              "shortDescription": {
+                "text": "a Readers or Writers policy of the Application, Orderer or Channel section is ANY, which lets any one organization read or submit"
+              },
+              "help": {
+                "text": "Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault. (best practice)"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "kind": "best practice"
+              }
+            },
+            {
+              "id": "endorsement-any",
+              "name": "endorsement-any",
+              "shortDescription": {
+                "text": "the LifecycleEndorsement or Endorsement policy of the Application section is ANY, so one organization can approve a chaincode definition or endorse a transaction"
+              },
+              "help": {
+                "text": "Use MAJORITY Endorsement, as the sample file does, or a signature policy that names who must endorse. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "anchor-peers-missing",
+              "name": "anchor-peers-missing",
+              "shortDescription": {
+                "text": "an organization used in the Application section of a profile has no AnchorPeers"
+              },
+              "help": {
+                "text": "Give the organization AnchorPeers, or set its anchor peers in a channel update after the channel exists; the pages say at least one must be defined in the channel configuration. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "orderer-solo",
+              "name": "orderer-solo",
+              "shortDescription": {
+                "text": "the OrdererType of a profile is solo"
+              },
+              "help": {
+                "text": "Use etcdraft, or BFT where the release supports it, with several ordering nodes. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "raft-consenter-count",
+              "name": "raft-consenter-count",
+              "shortDescription": {
+                "text": "an etcdraft profile lists fewer than 3 consenters, or none"
+              },
+              "help": {
+                "text": "List at least three consenters, each on its own host. (best practice)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "best practice"
+              }
+            },
+            {
+              "id": "bft-consenter-count",
+              "name": "bft-consenter-count",
+              "shortDescription": {
+                "text": "a BFT profile lists fewer than 4 consenters in its ConsenterMapping"
+              },
+              "help": {
+                "text": "List at least 3F+1 consenters for the F failures the network is to tolerate, so at least four. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "consenters-single-host",
+              "name": "consenters-single-host",
+              "shortDescription": {
+                "text": "all the consenters of a profile are on one host"
+              },
+              "help": {
+                "text": "Put each consenter on its own host, so that one failure cannot stop ordering. (best practice)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "best practice"
+              }
+            },
+            {
+              "id": "consenter-tls-missing",
+              "name": "consenter-tls-missing",
+              "shortDescription": {
+                "text": "a consenter has no ClientTLSCert or no ServerTLSCert"
+              },
+              "help": {
+                "text": "Give every consenter both certificate paths, as the Raft page shows. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "batch-settings-missing",
+              "name": "batch-settings-missing",
+              "shortDescription": {
+                "text": "the Orderer section of a profile sets no BatchTimeout, or no BatchSize or one of its three values"
+              },
+              "help": {
+                "text": "Set BatchTimeout and BatchSize with MaxMessageCount, AbsoluteMaxBytes and PreferredMaxBytes, as the sample file does. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "capabilities-missing",
+              "name": "capabilities-missing",
+              "shortDescription": {
+                "text": "a profile has no Capabilities for its Channel, Application or Orderer group"
+              },
+              "help": {
+                "text": "Add Capabilities with the level the binaries of the network support, set to true. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "capability-disabled",
+              "name": "capability-disabled",
+              "shortDescription": {
+                "text": "a Capabilities group of a profile has no level set to true (for example V2_0: false)"
+              },
+              "help": {
+                "text": "Set the level the binaries of the network support to true. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "org-msp-incomplete",
+              "name": "org-msp-incomplete",
+              "shortDescription": {
+                "text": "an organization has no ID or no MSPDir"
+              },
+              "help": {
+                "text": "Give the organization its ID and the MSPDir of its MSP folder. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            },
+            {
+              "id": "duplicate-msp-id",
+              "name": "duplicate-msp-id",
+              "shortDescription": {
+                "text": "two organization definitions have the same MSP ID"
+              },
+              "help": {
+                "text": "Give every organization its own MSP ID; use one definition and an alias where the same organization is meant. (documented)"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "kind": "documented"
+              }
+            }
+          ]
+        }
+      },
+      "artifacts": [
+        {
+          "location": {
+            "uri": "examples/good/configtx.yaml"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "readers-writers-any",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "The Application Readers and Writers policies are \"ANY Readers\" and \"ANY Writers\", so any one organization can read and submit. The documentation defaults are ANY, so confirm it is intended. This is a best practice of this tool, not a rule in the Fabric documentation. Fix: Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/good/configtx.yaml"
+                },
+                "region": {
+                  "startLine": 107,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "kind": "best practice",
+            "profiles": [
+              "HarborChannel",
+              "AuditChannel"
+            ]
+          }
+        },
+        {
+          "ruleId": "readers-writers-any",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "The Orderer Readers and Writers policies are \"ANY Readers\" and \"ANY Writers\", so any one organization can read and submit. The documentation defaults are ANY, so confirm it is intended. This is a best practice of this tool, not a rule in the Fabric documentation. Fix: Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/good/configtx.yaml"
+                },
+                "region": {
+                  "startLine": 142,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "kind": "best practice",
+            "profiles": [
+              "HarborChannel",
+              "AuditChannel"
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "notice": "This report is an input to a governance review before members join a network: not a security audit and not a guarantee that the network is safe.",
+        "result": "PASS - no finding at or above error (2 info)",
+        "sources": [
+          "https://hyperledger-fabric.readthedocs.io/en/latest/policies/policies.html",
+          "https://hyperledger-fabric.readthedocs.io/en/latest/create_channel/channel_policies.html",
+          "https://hyperledger-fabric.readthedocs.io/en/latest/create_channel/create_channel_config.html",
+          "https://hyperledger-fabric.readthedocs.io/en/latest/raft_configuration.html",
+          "https://hyperledger-fabric.readthedocs.io/en/latest/capabilities_concept.html",
+          "https://hyperledger-fabric.readthedocs.io/en/latest/gossip.html",
+          "https://github.com/hyperledger/fabric/blob/main/sampleconfig/configtx.yaml"
+        ]
+      }
+    }
+  ]
+}

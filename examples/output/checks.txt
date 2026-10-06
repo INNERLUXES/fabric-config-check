@@ -1,0 +1,22 @@
+fabric-config-check checks
+
+  config-unreadable       error    input          the file is not YAML the reader can follow (a tab in the indentation, a duplicate key, an alias with no anchor, a line outside the structure)
+  unsupported-construct   warning  input          the file holds a YAML construct the reader passes over (a block scalar, a tag, a complex key, a second document, a quoted string over several lines); what it holds was not checked
+  no-profiles             error    input          the file has no Profiles section with a profile in it, so there is no channel or consortium to check
+  single-organization     warning  best practice  the Application section of a profile, or a consortium, lists one organization
+  admins-any              error    documented     the Admins policy of the Application, Orderer or Channel section is ANY Admins, so the admins of any one organization can approve a change to that group
+  readers-writers-any     info     best practice  a Readers or Writers policy of the Application, Orderer or Channel section is ANY, which lets any one organization read or submit
+  endorsement-any         warning  documented     the LifecycleEndorsement or Endorsement policy of the Application section is ANY, so one organization can approve a chaincode definition or endorse a transaction
+  anchor-peers-missing    warning  documented     an organization used in the Application section of a profile has no AnchorPeers
+  orderer-solo            error    documented     the OrdererType of a profile is solo
+  raft-consenter-count    warning  best practice  an etcdraft profile lists fewer than 3 consenters, or none
+  bft-consenter-count     warning  documented     a BFT profile lists fewer than 4 consenters in its ConsenterMapping
+  consenters-single-host  warning  best practice  all the consenters of a profile are on one host
+  consenter-tls-missing   error    documented     a consenter has no ClientTLSCert or no ServerTLSCert
+  batch-settings-missing  warning  documented     the Orderer section of a profile sets no BatchTimeout, or no BatchSize or one of its three values
+  capabilities-missing    warning  documented     a profile has no Capabilities for its Channel, Application or Orderer group
+  capability-disabled     warning  documented     a Capabilities group of a profile has no level set to true (for example V2_0: false)
+  org-msp-incomplete      error    documented     an organization has no ID or no MSPDir
+  duplicate-msp-id        error    documented     two organization definitions have the same MSP ID
+
+A documented check rests on a page of the Fabric documentation or on its sample file; a best practice check is this tool's own choice and says so in its message. An input check is about the file itself.
