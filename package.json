@@ -1,0 +1,51 @@
+{
+  "name": "fabric-config-check",
+  "version": "1.0.0",
+  "description": "Fabric config check: reads the configtx.yaml of a Hyperledger Fabric network as text with a small strict YAML reader, runs nothing and fetches nothing, and lists governance and safety gaps with file and line as an input to a review before members join a consortium network: a single organization in a channel or consortium, Admins policies set to ANY, Readers and Writers set to ANY, endorsement policies set to ANY, organizations without anchor peers, the solo orderer, Raft or BFT consenter sets that are too small or on one host, consenters without TLS certificates, missing batch settings, missing or disabled capabilities, organizations without an ID or an MSPDir and duplicate MSP IDs. Text, markdown, JSON and SARIF output, exit codes for a pipeline, no dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "fabric-config-check": "bin/fabric-config-check.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "examples",
+    "research",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"test/*.test.js\"",
+    "check": "node tools/check.mjs",
+    "example": "node tools/example.mjs"
+  },
+  "keywords": [
+    "hyperledger-fabric",
+    "blockchain",
+    "configtx",
+    "governance",
+    "consortium",
+    "static-analysis",
+    "yaml",
+    "policies",
+    "raft",
+    "sarif",
+    "cli"
+  ],
+  "author": "INNERLUXES <info@innerluxes.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/INNERLUXES/fabric-config-check.git"
+  },
+  "homepage": "https://innerluxes.dev/blockchain/implementation"
+}

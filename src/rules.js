@@ -1,0 +1,46 @@
+// The checks. Each has an id that stays the same once released (pipelines and other tools read it from the JSON, SARIF
+// and markdown output), a severity, a kind, what it looks at, what to change and the points of the public pages it rests
+// on (src/data.js).
+//
+// kind 'documented'     the setting is named in the Fabric documentation or in its sample file, and the message says so
+// kind 'best practice'  the threshold or the idea is this tool's own choice, and the message says so
+// kind 'input'          a problem with the file itself; these never get lower
+
+import { LEVELS } from './data.js';
+
+const BEST = 'a best practice of this tool, not a rule in the Fabric documentation';
+
+export const RULES = [
+  { id: 'config-unreadable', severity: 'error', kind: 'input', summary: 'the file is not YAML the reader can follow (a tab in the indentation, a duplicate key, an alias with no anchor, a line outside the structure)', fix: 'Fix the line named, or keep the file to the YAML that configtx.yaml files use (docs/inputs.md).', basis: [] },
+  { id: 'unsupported-construct', severity: 'warning', kind: 'input', summary: 'the file holds a YAML construct the reader passes over (a block scalar, a tag, a complex key, a second document, a quoted string over several lines); what it holds was not checked', fix: 'Write the value in the plain form, or check that part by hand.', basis: [] },
+  { id: 'no-profiles', severity: 'error', kind: 'input', summary: 'the file has no Profiles section with a profile in it, so there is no channel or consortium to check', fix: 'Add the profiles the network is built from, or give the file that holds them.', basis: ['profiles-section'] },
+  { id: 'single-organization', severity: 'warning', kind: 'best practice', summary: 'the Application section of a profile, or a consortium, lists one organization', fix: 'List every organization that is to be a member, so that the policies have more than one party to agree.', basis: ['channels-between-orgs', 'admins-approve-members'], own: `the count of one is ${BEST}; the page says a channel is a way for organizations to communicate` },
+  { id: 'admins-any', severity: 'error', kind: 'documented', summary: 'the Admins policy of the Application, Orderer or Channel section is ANY Admins, so the admins of any one organization can approve a change to that group', fix: 'Use MAJORITY Admins, as the sample file does, or a signature policy that names the organizations whose approval is required.', basis: ['modification-policy', 'default-majority-admins', 'admins-majority-sample', 'admins-approve-members'] },
+  { id: 'readers-writers-any', severity: 'info', kind: 'best practice', summary: 'a Readers or Writers policy of the Application, Orderer or Channel section is ANY, which lets any one organization read or submit', fix: 'Confirm that open reading and submitting is intended. The documentation defaults are ANY, and MAJORITY on Writers would need several organizations to sign every submission, so this is a note and not a fault.', basis: ['readers-writers-any'], own: `treating ANY as worth a look is ${BEST}; the documentation defaults are ANY` },
+  { id: 'endorsement-any', severity: 'warning', kind: 'documented', summary: 'the LifecycleEndorsement or Endorsement policy of the Application section is ANY, so one organization can approve a chaincode definition or endorse a transaction', fix: 'Use MAJORITY Endorsement, as the sample file does, or a signature policy that names who must endorse.', basis: ['endorsement-majority', 'lifecycle-endorsement'] },
+  { id: 'anchor-peers-missing', severity: 'warning', kind: 'documented', summary: 'an organization used in the Application section of a profile has no AnchorPeers', fix: 'Give the organization AnchorPeers, or set its anchor peers in a channel update after the channel exists; the pages say at least one must be defined in the channel configuration.', basis: ['anchor-peer-required'], own: 'the current sample file no longer lists AnchorPeers, so a file written for the current release may set them in a channel update instead; the check cannot see a later update' },
+  { id: 'orderer-solo', severity: 'error', kind: 'documented', summary: 'the OrdererType of a profile is solo', fix: 'Use etcdraft, or BFT where the release supports it, with several ordering nodes.', basis: ['solo-removed', 'multi-node-production'] },
+  { id: 'raft-consenter-count', severity: 'warning', kind: 'best practice', summary: 'an etcdraft profile lists fewer than 3 consenters, or none', fix: 'List at least three consenters, each on its own host.', basis: ['raft-consenters-example', 'multi-node-production'], own: `the threshold of three is ${BEST}; the documentation says a production network should use a multi-node ordering service` },
+  { id: 'bft-consenter-count', severity: 'warning', kind: 'documented', summary: 'a BFT profile lists fewer than 4 consenters in its ConsenterMapping', fix: 'List at least 3F+1 consenters for the F failures the network is to tolerate, so at least four.', basis: ['bft-consenters'] },
+  { id: 'consenters-single-host', severity: 'warning', kind: 'best practice', summary: 'all the consenters of a profile are on one host', fix: 'Put each consenter on its own host, so that one failure cannot stop ordering.', basis: ['raft-consenters-example'], own: `the idea that consenters should not share a host is ${BEST}` },
+  { id: 'consenter-tls-missing', severity: 'error', kind: 'documented', summary: 'a consenter has no ClientTLSCert or no ServerTLSCert', fix: 'Give every consenter both certificate paths, as the Raft page shows.', basis: ['consenter-identity', 'raft-tls-pinning'] },
+  { id: 'batch-settings-missing', severity: 'warning', kind: 'documented', summary: 'the Orderer section of a profile sets no BatchTimeout, or no BatchSize or one of its three values', fix: 'Set BatchTimeout and BatchSize with MaxMessageCount, AbsoluteMaxBytes and PreferredMaxBytes, as the sample file does.', basis: ['batch-fields', 'batch-sample'], own: 'the tool does not know the values configtxgen fills in when a setting is left out, because the pages it reads do not say, so it asks for them to be written' },
+  { id: 'capabilities-missing', severity: 'warning', kind: 'documented', summary: 'a profile has no Capabilities for its Channel, Application or Orderer group', fix: 'Add Capabilities with the level the binaries of the network support, set to true.', basis: ['capabilities-groups', 'capabilities-purpose', 'capabilities-sample'] },
+  { id: 'capability-disabled', severity: 'warning', kind: 'documented', summary: 'a Capabilities group of a profile has no level set to true (for example V2_0: false)', fix: 'Set the level the binaries of the network support to true.', basis: ['capabilities-groups', 'capabilities-purpose', 'capabilities-sample'] },
+  { id: 'org-msp-incomplete', severity: 'error', kind: 'documented', summary: 'an organization has no ID or no MSPDir', fix: 'Give the organization its ID and the MSPDir of its MSP folder.', basis: ['org-id-mspdir'] },
+  { id: 'duplicate-msp-id', severity: 'error', kind: 'documented', summary: 'two organization definitions have the same MSP ID', fix: 'Give every organization its own MSP ID; use one definition and an alias where the same organization is meant.', basis: ['msp-id-unique', 'org-id-mspdir'] }
+];
+
+export const ruleById = (id) => RULES.find((r) => r.id === id);
+
+export const atOrAbove = (level, floor) => LEVELS.indexOf(level) >= LEVELS.indexOf(floor);
+
+// The result of a run: pass unless a finding is at or above the fail-on level.
+export function decide(byLevel, failOn) {
+  const failing = LEVELS.filter((l) => atOrAbove(l, failOn)).reduce((n, l) => n + (byLevel[l] ?? 0), 0);
+  const total = LEVELS.reduce((n, l) => n + (byLevel[l] ?? 0), 0);
+  const parts = ['error', 'warning', 'info'].filter((l) => byLevel[l]).map((l) => `${byLevel[l]} ${l}`);
+  const detail = parts.length ? ` (${parts.join(', ')})` : '';
+  if (failing > 0) return { pass: false, failOn, text: `FAIL - ${failing} ${failing === 1 ? 'finding' : 'findings'} at or above ${failOn}${detail}` };
+  return { pass: true, failOn, text: `PASS - no finding at or above ${failOn}${total ? detail : ''}` };
+}
