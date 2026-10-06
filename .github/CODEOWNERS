@@ -1,0 +1,13 @@
+# Every change is reviewed by a maintainer.
+* @innerluxesdev
+
+# The reader of the YAML, the reading of the file, the checks, the points of the public pages, the rules and the output
+# decide every result and what is read from the disk; changes need extra care.
+/src/yaml.js @innerluxesdev
+/src/files.js @innerluxesdev
+/src/analyze.js @innerluxesdev
+/src/data.js @innerluxesdev
+/src/rules.js @innerluxesdev
+/src/check.js @innerluxesdev
+/src/report.js @innerluxesdev
+/research/ @innerluxesdev
